@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>利润计算器</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #ccc; }
+        input { width: 100%; padding: 8px; margin: 5px 0; }
+        .result { font-weight: bold; color: red; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid black; padding: 10px; text-align: center; }
+        .amount-input { width: 100%; border: none; text-align: center; background: #e6f7ff; }
+        #totalLogistics { color: red; font-weight: bold; font-size: 1.2em; }
+        /* 新增按钮样式 */
+        button {
+            padding: 10px 15px;
+            font-size: 2em; /* 增大按钮字体 4 倍 */
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h2>利润计算器</h2>
+
+    <label for="exchangeRate">汇率（USD 到 CNY）:</label>
+    <input type="number" id="exchangeRate" value="7" step="0.01" oninput="calculateProfit()">
+
+    <label for="productPrice">商品售价（USD）:</label>
+    <input type="number" id="productPrice" value="" oninput="calculateProfit()">
+
+    <label for="purchaseCost">成本（CNY）:</label>
+    <input type="number" id="purchaseCost" value="" oninput="calculateProfit()">
+
+    <label for="headLogistics">运费（CNY）:</label>
+    <input type="number" id="headLogistics" value="0" oninput="calculateProfit()">
+
+    <label for="amazonFeePercent">手续费百分比（%）:</label>
+    <input type="number" id="amazonFeePercent" value="6" oninput="calculateProfit()">
+
+    <div class="result" id="profitResult"></div>
+
+    <h3>物流费用计算</h3>
+    <div>
+        <label for="weight">重量 (kg):</label>
+        <input type="number" id="weight" step="0.01" required>
+        <button onclick="calculateLogistics()">计算</button>
+    </div>
+
+    <h4>费用明细</h4>
+    <table id="costTable">
+        <thead>
+            <tr>
+                <th>订单号</th>
+                <th>重量 (kg)</th>
+                <th>金额 (RMB)</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <h4>总运费:</h4>
+    <div id="totalLogistics">0</div>
+
+    <script>
+        let totalLogistics = 0;
+        let orderCount = 0;
+
+        function calculateProfit() {
+            const exchangeRate = parseFloat(document.getElementById('exchangeRate').value);
+            const productPriceUSD = parseFloat(document.getElementById('productPrice').value);
+            const productPriceCNY = productPriceUSD * exchangeRate;
+            
+            const purchaseCost = parseFloat(document.getElementById('purchaseCost').value);
+            const headLogistics = parseFloat(document.getElementById('headLogistics').value);
+            
+            const amazonFeePercent = parseFloat(document.getElementById('amazonFeePercent').value);
+            const amazonFee = productPriceCNY * (amazonFeePercent / 100);
+
+            const totalCost = purchaseCost + headLogistics + amazonFee;
+            const profit = productPriceCNY - totalCost;
+            const profitMargin = (profit / productPriceCNY) * 100;
+
+            document.getElementById('profitResult').innerText = '净利润: ¥' + profit.toFixed(2) + '，净利润率: ' + profitMargin.toFixed(2) + '%';
+        }
+
+        function calculateLogistics() {
+            const weight = parseFloat(document.getElementById("weight").value);
+            if (!weight || weight <= 0) { // 检查重量输入是否有效
+                alert("请输入有效的重量！"); // 提示用户输入有效的重量
+                return; // 只在有效重量时继续
+            }
+
+            let shippingCost = 0;
+            let registrationFee; // 挂号费
+
+            // 根据重量计算运费
+            if (weight <= 0.1) {
+                shippingCost = 86;
+                registrationFee = 20;
+            } else if (weight <= 0.2) {
+                shippingCost = 91;
+                registrationFee = 18;
+            } else if (weight <= 0.45) {
+                shippingCost = 89;
+                registrationFee = 16;
+            } else if (weight <= 0.7) {
+                shippingCost = 87;
+                registrationFee = 16;
+            } else if (weight <= 2) {
+                shippingCost = 87; 
+                registrationFee = 9;
+            } else {
+                shippingCost = 81; 
+                registrationFee = 9;
+            }
+
+            // 计算总金额（运费 + 挂号费）
+            const totalCost = weight * shippingCost + registrationFee;
+            
+            // 更新表格
+            orderCount++;
+            const tableBody = document.querySelector("#costTable tbody");
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${orderCount}</td><td>${weight.toFixed(2)}</td><td class="amount-input">${totalCost.toFixed(2)}</td>`;
+            tableBody.appendChild(row);
+            
+            // 更新总运费
+            totalLogistics += totalCost;
+            document.getElementById("totalLogistics").innerText = totalLogistics.toFixed(2);
+            
+            // 更新利润计算器中的运费字段
+            document.getElementById("headLogistics").value = totalLogistics.toFixed(2);
+            calculateProfit();
+
+            // 重置输入框
+            document.getElementById("weight").value = '';
+        }
+
+        // 初始计算
+        calculateProfit();
+    </script>
+</body>
+</html>
